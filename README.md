@@ -1,2 +1,2 @@
-# kusumitha
-devops
+ kusumitha
+bsc,cs-d
