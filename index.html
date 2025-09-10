@@ -1,5 +1,267 @@
-<html>
-  <head><title>html idea</title></head>
-  <body><h2>hospital management system</h2>
-<img src=hospital img.png> </body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hospital Management - Patient Workflow</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #ffe6f0;
+      color: #333;
+    }
+    header {
+      background-color: #ffb6c1;
+      padding: 1rem;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+    section {
+      display: none;
+      padding: 1rem;
+    }
+    section.active {
+      display: block;
+    }
+    .form-group {
+      margin: 1rem 0;
+    }
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+    input, textarea, select, button {
+      width: 100%;
+      padding: 0.5rem;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      margin-bottom: 0.5rem;
+    }
+    button {
+      background-color: #ffb6c1;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:hover {
+      background-color: #ff99aa;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 0.75rem;
+      text-align: left;
+    }
+    th {
+      background-color: #ffb6c1;
+    }
+    .back-btn {
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <header>Hospital Management - Patient Workflow</header>
+
+  <!-- Registration Section -->
+  <section id="register" class="active">
+    <h2>Register</h2>
+    <div class="form-group">
+      <label>Name:</label>
+      <input type="text" id="regName">
+    </div>
+    <div class="form-group">
+      <label>Age:</label>
+      <input type="number" id="regAge">
+    </div>
+    <div class="form-group">
+      <label>Username:</label>
+      <input type="text" id="regUser">
+    </div>
+    <div class="form-group">
+      <label>Password:</label>
+      <input type="password" id="regPass">
+    </div>
+    <button onclick="registerPatient()">Register</button>
+    <p id="regMsg" style="color:green;"></p>
+  </section>
+
+  <!-- Login Section -->
+  <section id="login">
+    <h2>Login</h2>
+    <div class="form-group">
+      <label>Username:</label>
+      <input type="text" id="loginUser">
+    </div>
+    <div class="form-group">
+      <label>Password:</label>
+      <input type="password" id="loginPass">
+    </div>
+    <button onclick="loginPatient()">Login</button>
+    <p id="loginMsg" style="color:red;"></p>
+    <button class="back-btn" onclick="showSection('register')">Back to Register</button>
+  </section>
+
+  <!-- Symptom Checker Section -->
+  <section id="symptoms">
+    <h2>Symptom Checker</h2>
+    <p>Enter your symptoms separated by commas (e.g., fever, cough):</p>
+    <textarea id="symptomInput" rows="3"></textarea>
+    <button onclick="processSymptoms()">Check Disease</button>
+    <button class="back-btn" onclick="showSection('login')">Back to Login</button>
+  </section>
+
+  <!-- Appointment Confirmation -->
+  <section id="confirmation">
+    <h2>Appointment Confirmation</h2>
+    <p><strong>Disease:</strong> <span id="confDisease"></span></p>
+    <p><strong>Assigned Doctor:</strong> <span id="confDoctor"></span></p>
+    <p><strong>Appointment Time:</strong> <span id="confTime"></span></p>
+    <p><strong>Bill Amount:</strong> ₹<span id="confBill"></span></p>
+    <div class="form-group">
+      <label>Select Payment Mode:</label>
+      <select id="paymentMode">
+        <option value="Cash">Cash</option>
+        <option value="Credit Card">Credit Card</option>
+        <option value="UPI">UPI</option>
+        <option value="Net Banking">Net Banking</option>
+      </select>
+    </div>
+    <button onclick="payBill()">Pay Now</button>
+    <button class="back-btn" onclick="showSection('symptoms')">Back to Symptoms</button>
+    <button class="back-btn" onclick="showSection('appointments')">View All Appointments</button>
+  </section>
+
+  <!-- Appointments Table -->
+  <section id="appointments">
+    <h2>All Appointments</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Patient</th>
+          <th>Disease</th>
+          <th>Doctor</th>
+          <th>Time</th>
+          <th>Bill</th>
+          <th>Payment Mode</th>
+        </tr>
+      </thead>
+      <tbody id="appointmentList"></tbody>
+    </table>
+    <button class="back-btn" onclick="showSection('symptoms')">Back to Symptoms</button>
+  </section>
+
+  <script>
+    const patients = [];
+    const appointments = [];
+    const slots = ["10:00 AM","10:30 AM","11:00 AM","11:30 AM","12:00 PM","12:30 PM","2:00 PM","2:30 PM","3:00 PM","3:30 PM","4:00 PM","4:30 PM","5:00 PM"];
+    let slotIndex = 0;
+    let currentPatient = null;
+
+    const diseaseMap = [
+      {symptoms:["fever","cough","cold"], disease:"Flu", doctor:"General Physician", bill:500},
+      {symptoms:["chest pain","shortness of breath"], disease:"Heart Problem", doctor:"Cardiologist", bill:1000},
+      {symptoms:["headache","dizziness"], disease:"Migraine", doctor:"Neurologist", bill:700},
+      {symptoms:["stomach pain","nausea"], disease:"Gastric Issue", doctor:"Gastroenterologist", bill:600},
+      {symptoms:["back pain","joint pain"], disease:"Orthopedic Issue", doctor:"Orthopedic Surgeon", bill:800},
+      {symptoms:["skin rash","itching"], disease:"Skin Allergy", doctor:"Dermatologist", bill:400}
+    ];
+
+    function showSection(id) {
+      document.querySelectorAll('section').forEach(sec => sec.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    function registerPatient() {
+      const name = document.getElementById('regName').value;
+      const age = document.getElementById('regAge').value;
+      const user = document.getElementById('regUser').value;
+      const pass = document.getElementById('regPass').value;
+      if (name && age && user && pass) {
+        patients.push({name, age, user, pass});
+        document.getElementById('regMsg').textContent = 'Registration successful! Please login.';
+        setTimeout(() => {
+          document.getElementById('regMsg').textContent = '';
+          showSection('login');
+        }, 1000);
+      } else {
+        document.getElementById('regMsg').textContent = 'All fields required!';
+      }
+    }
+
+    function loginPatient() {
+      const user = document.getElementById('loginUser').value;
+      const pass = document.getElementById('loginPass').value;
+      const found = patients.find(p => p.user === user && p.pass === pass);
+      if (found) {
+        currentPatient = found;
+        showSection('symptoms');
+        document.getElementById('loginMsg').textContent = '';
+      } else {
+        document.getElementById('loginMsg').textContent = 'Invalid login details';
+      }
+    }
+
+    function processSymptoms() {
+      const input = document.getElementById('symptomInput').value.toLowerCase();
+      const symptoms = input.split(',').map(s => s.trim());
+      let matched = null;
+      for (let map of diseaseMap) {
+        if (map.symptoms.some(sym => symptoms.includes(sym))) {
+          matched = map;
+          break;
+        }
+      }
+      if (matched) {
+        const time = slots[slotIndex % slots.length];
+        slotIndex++;
+        document.getElementById('confDisease').textContent = matched.disease;
+        document.getElementById('confDoctor').textContent = matched.doctor;
+        document.getElementById('confTime').textContent = time;
+        document.getElementById('confBill').textContent = matched.bill;
+        showSection('confirmation');
+        const appointment = {patient: currentPatient.name, disease: matched.disease, doctor: matched.doctor, time, bill: matched.bill, paymentMode:''};
+        appointments.push(appointment);
+        updateAppointmentTable();
+      } else {
+        alert('No matching disease found. Please consult admin.');
+      }
+    }
+
+    function payBill() {
+      const mode = document.getElementById('paymentMode').value;
+      const lastAppointment = appointments[appointments.length - 1];
+      if (lastAppointment) {
+        lastAppointment.paymentMode = mode;
+        alert(Payment of ₹${lastAppointment.bill} successful via ${mode});
+        updateAppointmentTable();
+        showSection('appointments');
+      }
+    }
+
+    function updateAppointmentTable() {
+      const tbody = document.getElementById('appointmentList');
+      tbody.innerHTML = '';
+      appointments.forEach(app => {
+        const row = `
+          <tr>
+            <td>${app.patient}</td>
+            <td>${app.disease}</td>
+            <td>${app.doctor}</td>
+            <td>${app.time}</td>
+            <td>₹${app.bill}</td>
+            <td>${app.paymentMode}</td>
+          </tr>
+        `;
+        tbody.innerHTML += row;
+      });
+    }
+  </script>
+</body>
 </html>
